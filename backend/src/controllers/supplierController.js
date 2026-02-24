@@ -24,4 +24,36 @@ exports.createSupplier = async (req, res, next) => {
         next(error);
     }
 };
-// Add update/delete as needed
+// @desc    Update a supplier
+// @route   PUT /api/suppliers/:id
+// @access  Private
+exports.updateSupplier = async (req, res, next) => {
+    try {
+        const supplier = await Supplier.findOneAndUpdate(
+            { _id: req.params.id, tenantId: req.tenantId },
+            req.body,
+            { new: true, runValidators: true }
+        );
+        if (!supplier) {
+            return res.status(404).json({ error: 'Supplier not found' });
+        }
+        res.status(200).json(supplier);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Delete a supplier
+// @route   DELETE /api/suppliers/:id
+// @access  Private
+exports.deleteSupplier = async (req, res, next) => {
+    try {
+        const supplier = await Supplier.findOneAndDelete({ _id: req.params.id, tenantId: req.tenantId });
+        if (!supplier) {
+            return res.status(404).json({ error: 'Supplier not found' });
+        }
+        res.status(200).json({ message: 'Supplier removed' });
+    } catch (error) {
+        next(error);
+    }
+};

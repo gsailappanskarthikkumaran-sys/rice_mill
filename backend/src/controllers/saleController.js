@@ -62,3 +62,25 @@ exports.getSales = async (req, res, next) => {
         next(error);
     }
 };
+// @desc    Delete a sale and revert stock
+// @route   DELETE /api/sales/:id
+// @access  Private
+exports.deleteSale = async (req, res, next) => {
+    try {
+        const sale = await Sale.findOne({ _id: req.params.id, tenantId: req.tenantId });
+        if (!sale) {
+            return res.status(404).json({ error: 'Sale record not found' });
+        }
+
+        // Revert Stock
+        await Stock.findOneAndUpdate(
+            { tenantId: req.tenantId },
+            { $inc: { riceStock: sale.riceQuantity } }
+        );
+
+        await Sale.findByIdAndDelete(req.params.id);
+        res.status(200).json({ message: 'Sale record deleted and stock reverted' });
+    } catch (error) {
+        next(error);
+    }
+};

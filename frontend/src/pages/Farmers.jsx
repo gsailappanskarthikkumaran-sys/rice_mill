@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 // v2.0.1 - Robust directory fetching
 import api from '../utils/api';
-import { Plus, Users, Phone, MapPin, Search } from 'lucide-react';
+import { Plus, Users, Phone, MapPin, Search, Edit, Trash2, X } from 'lucide-react';
 
 const Farmers = () => {
     const [farmers, setFarmers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
-    const [formData, setFormData] = useState({ farmerName: '', phoneNumber: '', village: '' });
+    const [isEditing, setIsEditing] = useState(false);
+    const [selectedId, setSelectedId] = useState(null);
+    const [formData, setFormData] = useState({ farmerName: '', mobile: '', village: '' });
 
     useEffect(() => {
         fetchFarmers();
@@ -25,15 +27,53 @@ const Farmers = () => {
         }
     };
 
+    const handleEdit = (farmer) => {
+        setFormData({
+            farmerName: farmer.farmerName,
+            mobile: farmer.mobile,
+            village: farmer.village
+        });
+        setSelectedId(farmer._id);
+        setIsEditing(true);
+        setIsAdding(true);
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this farmer?')) return;
+        try {
+            await api.delete(`/farmers/${id}`);
+            fetchFarmers();
+        } catch (err) {
+            alert('Error deleting farmer');
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await api.post('/farmers', formData);
-            setFormData({ farmerName: '', phoneNumber: '', village: '' });
+            if (isEditing) {
+                await api.put(`/farmers/${selectedId}`, formData);
+            } else {
+                await api.post('/farmers', formData);
+            }
+            setFormData({ farmerName: '', mobile: '', village: '' });
             setIsAdding(false);
+            setIsEditing(false);
+            setSelectedId(null);
             fetchFarmers();
         } catch (err) {
-            alert(err.response?.data?.msg || 'Error adding farmer');
+            alert(err.response?.data?.msg || 'Error saving farmer');
+        }
+    };
+
+    const toggleView = () => {
+        if (isAdding) {
+            setIsAdding(false);
+            setIsEditing(false);
+            setFormData({ farmerName: '', mobile: '', village: '' });
+            setSelectedId(null);
+        } else {
+            setIsAdding(true);
         }
     };
 
@@ -48,16 +88,16 @@ const Farmers = () => {
                 </div>
                 <button
                     className="btn-primary"
-                    onClick={() => setIsAdding(!isAdding)}
+                    onClick={toggleView}
                 >
-                    <Plus size={18} />
-                    <span>{isAdding ? 'View List' : 'Add Farmer'}</span>
+                    {isAdding ? <X size={18} /> : <Plus size={18} />}
+                    <span>{isAdding ? 'Cancel' : 'Add Farmer'}</span>
                 </button>
             </div>
 
             {isAdding ? (
                 <div className="glass-card form-card">
-                    <h3 style={{ marginBottom: '24px' }}>Register New Farmer</h3>
+                    <h3 style={{ marginBottom: '24px' }}>{isEditing ? 'Edit Farmer Profile' : 'Register New Farmer'}</h3>
                     <form onSubmit={handleSubmit}>
                         <div className="form-group">
                             <label>Farmer Name</label>
@@ -71,14 +111,14 @@ const Farmers = () => {
                             />
                         </div>
                         <div className="form-group">
-                            <label>Phone Number</label>
+                            <label>Mobile Number</label>
                             <input
                                 required
                                 type="text"
                                 placeholder="10-digit mobile number"
                                 className="form-control"
-                                value={formData.phoneNumber}
-                                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                                value={formData.mobile}
+                                onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
                             />
                         </div>
                         <div className="form-group">
@@ -93,7 +133,7 @@ const Farmers = () => {
                             />
                         </div>
                         <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '12px' }}>
-                            Save Farmer Profile
+                            {isEditing ? 'Update Farmer Profile' : 'Save Farmer Profile'}
                         </button>
                     </form>
                 </div>
@@ -103,7 +143,7 @@ const Farmers = () => {
                         <thead>
                             <tr>
                                 <th>Farmer Name</th>
-                                <th>Phone Number</th>
+                                <th>Mobile Number</th>
                                 <th>Village</th>
                                 <th>Joined Date</th>
                                 <th>Actions</th>
@@ -115,7 +155,7 @@ const Farmers = () => {
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                             <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-                                                {f.farmerName.charAt(0)}
+                                                {f.farmerName?.charAt(0)}
                                             </div>
                                             <span style={{ fontWeight: 600 }}>{f.farmerName}</span>
                                         </div>
@@ -123,7 +163,7 @@ const Farmers = () => {
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)' }}>
                                             <Phone size={14} />
-                                            {f.phoneNumber}
+                                            {f.mobile}
                                         </div>
                                     </td>
                                     <td>
@@ -132,11 +172,22 @@ const Farmers = () => {
                                             {f.village}
                                         </div>
                                     </td>
-                                    <td>{new Date(f.createdAt).toLocaleDateString()}</td>
+                                    <td>{f.createdAt ? new Date(f.createdAt).toLocaleDateString() : 'N/A'}</td>
                                     <td>
-                                        <button style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600 }}>
-                                            Edit
-                                        </button>
+                                        <div style={{ display: 'flex', gap: '12px' }}>
+                                            <button
+                                                onClick={() => handleEdit(f)}
+                                                style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}
+                                            >
+                                                <Edit size={14} /> Edit
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(f._id)}
+                                                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

@@ -158,7 +158,7 @@ const Tenants = () => {
                                             background: t.subscriptionStatus === 'active' ? '#10b98120' : '#ef444420',
                                             color: t.subscriptionStatus === 'active' ? '#10b981' : '#ef4444'
                                         }}>
-                                            {t.subscriptionStatus.toUpperCase()}
+                                            {(t.subscriptionStatus || 'active').toUpperCase()}
                                         </span>
                                     </td>
                                     <td>{new Date(t.createdAt).toLocaleDateString()}</td>

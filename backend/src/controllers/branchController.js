@@ -46,3 +46,18 @@ exports.updateBranch = async (req, res, next) => {
         next(error);
     }
 };
+
+// @desc    Delete a branch
+// @route   DELETE /api/branches/:id
+// @access  Private (TenantAdmin)
+exports.deleteBranch = async (req, res, next) => {
+    try {
+        const branch = await Branch.findOneAndDelete({ _id: req.params.id, tenantId: req.tenantId });
+        if (!branch) {
+            return res.status(404).json({ error: 'Branch not found' });
+        }
+        res.status(200).json({ message: 'Branch removed' });
+    } catch (error) {
+        next(error);
+    }
+};

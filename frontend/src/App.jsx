@@ -14,7 +14,16 @@ import Tenants from './pages/Tenants'; // For SuperAdmin
 import Suppliers from './pages/Suppliers';
 import Settings from './pages/Settings';
 
+import { applyTheme } from './utils/theme';
+
 function App() {
+    React.useEffect(() => {
+        const savedColor = localStorage.getItem('theme-primary');
+        if (savedColor) {
+            applyTheme(savedColor);
+        }
+    }, []);
+
     return (
         <AuthProvider>
             <BrowserRouter>

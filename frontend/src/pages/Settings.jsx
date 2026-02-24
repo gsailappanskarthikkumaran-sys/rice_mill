@@ -1,17 +1,26 @@
 import React, { useState, useEffect } from 'react';
-// v2.0.1 - Configuration safety update
 import api from '../utils/api';
-import { Settings as SettingsIcon, Plus, Building2, MapPin, Loader2, Save } from 'lucide-react';
-import './Modules.css';
+import { Building2, Plus, Layout, Palette, Save, Moon, Sun, Monitor, Trash2, Edit, X } from 'lucide-react';
+import { applyTheme } from '../utils/theme';
 
 const Settings = () => {
+    // Theme State
+    const [theme, setTheme] = useState({
+        primaryColor: '#4361ee',
+        radius: '8px',
+        mode: 'light'
+    });
+
+    // Branch State
     const [branches, setBranches] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [isAdding, setIsAdding] = useState(false);
-    const [formData, setFormData] = useState({ name: '', location: '', contact: '' });
-    const [error, setError] = useState('');
+    const [isAddingBranch, setIsAddingBranch] = useState(false);
+    const [isEditingBranch, setIsEditingBranch] = useState(false);
+    const [selectedBranchId, setSelectedBranchId] = useState(null);
+    const [branchData, setBranchData] = useState({ name: '', location: '', contact: '' });
 
     useEffect(() => {
+        const savedTheme = localStorage.getItem('app-theme');
+        if (savedTheme) setTheme(JSON.parse(savedTheme));
         fetchBranches();
     }, []);
 
@@ -19,137 +28,232 @@ const Settings = () => {
         try {
             const res = await api.get('/branches');
             setBranches(Array.isArray(res.data) ? res.data : []);
-            setLoading(false);
-        } catch (err) {
-            console.error(err);
-            setLoading(false);
+        } catch (error) {
+            console.error('Error fetching branches:', error);
         }
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError('');
+    const handleApplyTheme = () => {
+        applyTheme(theme.primaryColor, theme.radius);
+        localStorage.setItem('app-theme', JSON.stringify(theme));
+        alert('Theme applied successfully!');
+    };
+
+    const handleEditBranch = (branch) => {
+        setBranchData({
+            name: branch.name,
+            location: branch.location,
+            contact: branch.contact
+        });
+        setSelectedBranchId(branch._id);
+        setIsEditingBranch(true);
+        setIsAddingBranch(true);
+    };
+
+    const handleDeleteBranch = async (id) => {
+        if (!window.confirm('Delete this branch?')) return;
         try {
-            await api.post('/branches', formData);
-            setFormData({ name: '', location: '', contact: '' });
-            setIsAdding(false);
+            await api.delete(`/branches/${id}`);
             fetchBranches();
         } catch (err) {
-            setError(err.response?.data?.msg || 'Error adding branch');
+            alert('Failed to delete branch');
         }
     };
 
-    if (loading) return (
-        <div className="loading-state">
-            <Loader2 className="animate-spin" />
-            <p>Loading application settings...</p>
-        </div>
-    );
+    const handleBranchSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            if (isEditingBranch) {
+                await api.put(`/branches/${selectedBranchId}`, branchData);
+            } else {
+                await api.post('/branches', branchData);
+            }
+            setIsAddingBranch(false);
+            setIsEditingBranch(false);
+            setSelectedBranchId(null);
+            setBranchData({ name: '', location: '', contact: '' });
+            fetchBranches();
+        } catch (error) {
+            alert(error.response?.data?.msg || 'Failed to save branch');
+        }
+    };
+
+    const toggleBranchView = () => {
+        if (isAddingBranch) {
+            setIsAddingBranch(false);
+            setIsEditingBranch(false);
+            setBranchData({ name: '', location: '', contact: '' });
+            setSelectedBranchId(null);
+        } else {
+            setIsAddingBranch(true);
+        }
+    };
 
     return (
-        <div className="module-container fade-in">
-            <div className="module-header">
-                <h1 className="module-title">Application Settings</h1>
-                <p className="module-subtitle">Manage branches, mill locations, and system configuration</p>
+        <div className="fade-in">
+            <div style={{ marginBottom: '32px' }}>
+                <h1 style={{ fontSize: '1.875rem', marginBottom: '8px' }}>System Settings</h1>
+                <p style={{ color: 'var(--text-muted)' }}>Configure your mill branches and application appearance</p>
             </div>
 
-            <div className="stats-container">
-                <div className="module-card glass-card" style={{ flex: 1 }}>
-                    <h2 className="card-title">Branch Management</h2>
-                    <p className="module-subtitle" style={{ marginBottom: '20px' }}>Add and manage your rice mill branch locations</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '32px' }}>
+                {/* Branch Management */}
+                <div className="glass-card" style={{ padding: '32px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <Building2 className="text-primary" />
+                            <h2 style={{ fontSize: '1.25rem', margin: 0 }}>Mill Branches</h2>
+                        </div>
+                        <button
+                            className="btn-primary"
+                            style={{ padding: '8px 16px', fontSize: '0.875rem' }}
+                            onClick={toggleBranchView}
+                        >
+                            {isAddingBranch ? <X size={16} /> : <Plus size={16} />}
+                            {isAddingBranch ? 'Cancel' : 'Add Branch'}
+                        </button>
+                    </div>
 
-                    <button
-                        className="btn-primary"
-                        style={{ marginBottom: '20px', width: 'fit-content' }}
-                        onClick={() => setIsAdding(!isAdding)}
-                    >
-                        <Plus size={18} /> {isAdding ? 'Cancel' : 'Add New Branch'}
-                    </button>
-
-                    {isAdding && (
-                        <div className="fade-in" style={{ marginBottom: '30px', padding: '24px', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
-                            {error && <p className="error-message" style={{ marginBottom: '20px' }}>{error}</p>}
-                            <form onSubmit={handleSubmit} className="module-form">
-                                <div className="form-group">
-                                    <label className="input-label">Branch Name</label>
-                                    <input
-                                        type="text"
-                                        className="input-field"
-                                        required
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        placeholder="Main Mill, Storage A, etc."
-                                    />
+                    {isAddingBranch ? (
+                        <form onSubmit={handleBranchSubmit} style={{ marginBottom: '32px', background: 'var(--bg-light)', padding: '24px', borderRadius: 'var(--radius-md)' }}>
+                            <h3 style={{ fontSize: '1rem', marginBottom: '16px' }}>{isEditingBranch ? 'Edit Branch' : 'New Branch Details'}</h3>
+                            <div className="form-group">
+                                <label>Branch Name</label>
+                                <input
+                                    required
+                                    type="text"
+                                    className="form-control"
+                                    value={branchData.name}
+                                    onChange={(e) => setBranchData({ ...branchData, name: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Location</label>
+                                <input
+                                    required
+                                    type="text"
+                                    className="form-control"
+                                    value={branchData.location}
+                                    onChange={(e) => setBranchData({ ...branchData, location: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Contact Number</label>
+                                <input
+                                    required
+                                    type="text"
+                                    className="form-control"
+                                    value={branchData.contact}
+                                    onChange={(e) => setBranchData({ ...branchData, contact: e.target.value })}
+                                />
+                            </div>
+                            <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                                {isEditingBranch ? 'Update Branch' : 'Create Branch'}
+                            </button>
+                        </form>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {branches.map(branch => (
+                                <div key={branch._id} style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    padding: '16px',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: 'var(--radius-md)',
+                                    background: 'var(--bg-card)'
+                                }}>
+                                    <div>
+                                        <h4 style={{ margin: '0 0 4px 0', fontSize: '1rem' }}>{branch.name}</h4>
+                                        <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-muted)' }}>{branch.location} • {branch.contact}</p>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button
+                                            onClick={() => handleEditBranch(branch)}
+                                            style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }}
+                                        >
+                                            <Edit size={16} />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteBranch(branch._id)}
+                                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="form-group">
-                                    <label className="input-label">Contact Number</label>
-                                    <input
-                                        type="text"
-                                        className="input-field"
-                                        required
-                                        value={formData.contact}
-                                        onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
-                                    />
-                                </div>
-                                <div className="form-group-full">
-                                    <label className="input-label">Location/Address</label>
-                                    <input
-                                        type="text"
-                                        className="input-field"
-                                        required
-                                        value={formData.location}
-                                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                                    />
-                                </div>
-                                <div className="form-group-full" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
-                                    <button type="submit" className="btn-primary">Save Branch</button>
-                                </div>
-                            </form>
+                            ))}
+                            {branches.length === 0 && <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>No branches configured.</p>}
                         </div>
                     )}
-
-                    <div className="branches-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-                        {branches.map((branch) => (
-                            <div key={branch._id} className="module-card" style={{ padding: '20px', border: '1px solid var(--border-color)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
-                                    <div className="icon-container" style={{ margin: 0, padding: '8px' }}>
-                                        <Building2 size={20} color="var(--primary)" />
-                                    </div>
-                                    <span className="badge badge-success">Active</span>
-                                </div>
-                                <h3 style={{ margin: '0 0 5px 0', fontSize: '18px' }}>{branch.name}</h3>
-                                <p style={{ color: 'var(--text-muted)', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                    <MapPin size={14} /> {branch.location}
-                                </p>
-                                <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end' }}>
-                                    <button className="btn-primary" style={{ background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)', padding: '5px 12px', fontSize: '13px' }}>
-                                        Edit Details
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
                 </div>
 
-                <div className="module-card glass-card" style={{ width: '350px' }}>
-                    <h2 className="card-title">System Info</h2>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                        <div className="form-group">
-                            <label className="input-label">Currency Symbol</label>
-                            <input type="text" className="input-field" defaultValue="₹" disabled />
+                {/* Aesthetic Settings */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                    <div className="glass-card" style={{ padding: '32px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                            <Palette className="text-primary" />
+                            <h2 style={{ fontSize: '1.25rem', margin: 0 }}>Design System</h2>
                         </div>
+
                         <div className="form-group">
-                            <label className="input-label">Tax Rate (%)</label>
-                            <input type="text" className="input-field" defaultValue="5" disabled />
+                            <label>Primary Brand Color</label>
+                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                <input
+                                    type="color"
+                                    value={theme.primaryColor}
+                                    onChange={(e) => setTheme({ ...theme, primaryColor: e.target.value })}
+                                    style={{ width: '50px', height: '50px', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+                                />
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    value={theme.primaryColor}
+                                    onChange={(e) => setTheme({ ...theme, primaryColor: e.target.value })}
+                                />
+                            </div>
                         </div>
+
                         <div className="form-group">
-                            <label className="input-label">Measurement Unit</label>
-                            <input type="text" className="input-field" defaultValue="Quintals (q)" disabled />
+                            <label>Interface Roundness</label>
+                            <select
+                                className="form-control"
+                                value={theme.radius}
+                                onChange={(e) => setTheme({ ...theme, radius: e.target.value })}
+                            >
+                                <option value="0px">Sharp (0px)</option>
+                                <option value="4px">Sleek (4px)</option>
+                                <option value="8px">Standard (8px)</option>
+                                <option value="12px">Rounded (12px)</option>
+                                <option value="20px">Soft (20px)</option>
+                            </select>
                         </div>
-                        <div style={{ marginTop: '10px' }}>
-                            <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.5' }}>
-                                * Some settings are restricted to Tenant Administrators only.
-                            </p>
+
+                        <button onClick={handleApplyTheme} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                            <Save size={18} /> Apply Visual Changes
+                        </button>
+                    </div>
+
+                    <div className="glass-card" style={{ padding: '32px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                            <Layout className="text-primary" />
+                            <h2 style={{ fontSize: '1.25rem', margin: 0 }}>Display Mode</h2>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            <button
+                                className={`btn-secondary ${theme.mode === 'light' ? 'active' : ''}`}
+                                onClick={() => setTheme({ ...theme, mode: 'light' })}
+                                style={{ justifyContent: 'center', opacity: theme.mode === 'light' ? 1 : 0.6 }}
+                            >
+                                <Sun size={18} /> Light
+                            </button>
+                            <button
+                                className={`btn-secondary ${theme.mode === 'dark' ? 'active' : ''}`}
+                                onClick={() => setTheme({ ...theme, mode: 'dark' })}
+                                style={{ justifyContent: 'center', opacity: theme.mode === 'dark' ? 1 : 0.6 }}
+                            >
+                                <Moon size={18} /> Dark
+                            </button>
                         </div>
                     </div>
                 </div>

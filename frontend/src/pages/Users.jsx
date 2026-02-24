@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 // v2.0.1 - Staff management safety update
 import api from '../utils/api';
-import { Users as UsersIcon, UserPlus, Shield, Mail, Lock, CheckCircle, XCircle } from 'lucide-react';
+import { Users as UsersIcon, UserPlus, Shield, Mail, Lock, CheckCircle, XCircle, Edit, Trash2, X } from 'lucide-react';
 
 const Users = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [selectedId, setSelectedId] = useState(null);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -31,15 +33,46 @@ const Users = () => {
         }
     };
 
+    const handleEdit = (user) => {
+        setFormData({
+            name: user.name,
+            email: user.email,
+            password: '', // Don't pre-fill password
+            role: user.role
+        });
+        setSelectedId(user._id);
+        setIsEditing(true);
+        setIsAdding(true);
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to remove this user?')) return;
+        try {
+            await api.delete(`/users/${id}`);
+            fetchUsers();
+        } catch (err) {
+            alert('Error deleting user');
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await api.post('/users', formData);
+            if (isEditing) {
+                // Remove password if empty to not overwrite it with hashed empty string
+                const data = { ...formData };
+                if (!data.password) delete data.password;
+                await api.put(`/users/${selectedId}`, data);
+            } else {
+                await api.post('/users', formData);
+            }
             setIsAdding(false);
+            setIsEditing(false);
+            setSelectedId(null);
             setFormData({ name: '', email: '', password: '', role: 'Operator' });
             fetchUsers();
         } catch (error) {
-            alert(error.response?.data?.msg || 'Failed to create user');
+            alert(error.response?.data?.msg || 'Failed to save user');
         }
     };
 
@@ -49,6 +82,17 @@ const Users = () => {
             fetchUsers();
         } catch (error) {
             alert('Failed to update user status');
+        }
+    };
+
+    const toggleView = () => {
+        if (isAdding) {
+            setIsAdding(false);
+            setIsEditing(false);
+            setFormData({ name: '', email: '', password: '', role: 'Operator' });
+            setSelectedId(null);
+        } else {
+            setIsAdding(true);
         }
     };
 
@@ -62,17 +106,17 @@ const Users = () => {
                     <p style={{ color: 'var(--text-muted)' }}>Manage user accounts, roles and system access</p>
                 </div>
                 <button
-                    onClick={() => setIsAdding(!isAdding)}
+                    onClick={toggleView}
                     className="btn-primary"
                 >
-                    {isAdding ? <UsersIcon size={18} /> : <UserPlus size={18} />}
-                    <span>{isAdding ? 'View All Staff' : 'Add New User'}</span>
+                    {isAdding ? <X size={18} /> : <UserPlus size={18} />}
+                    <span>{isAdding ? 'Cancel' : 'Add New User'}</span>
                 </button>
             </div>
 
             {isAdding ? (
                 <div className="glass-card form-card">
-                    <h3 style={{ marginBottom: '24px' }}>Register New User</h3>
+                    <h3 style={{ marginBottom: '24px' }}>{isEditing ? 'Edit User Account' : 'Register New User'}</h3>
                     <form onSubmit={handleSubmit}>
                         <div className="form-group">
                             <label>Full Name</label>
@@ -97,11 +141,11 @@ const Users = () => {
                             />
                         </div>
                         <div className="form-group">
-                            <label>Password</label>
+                            <label>Password {isEditing && '(Leave blank to keep current)'}</label>
                             <input
-                                required
+                                required={!isEditing}
                                 type="password"
-                                placeholder="Enter strong password"
+                                placeholder={isEditing ? 'New password (optional)' : 'Enter strong password'}
                                 className="form-control"
                                 value={formData.password}
                                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -120,7 +164,7 @@ const Users = () => {
                             </select>
                         </div>
                         <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '12px' }}>
-                            Create User Account
+                            {isEditing ? 'Update User Account' : 'Create User Account'}
                         </button>
                     </form>
                 </div>
@@ -132,16 +176,24 @@ const Users = () => {
                                 <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <Shield size={24} />
                                 </div>
-                                <span style={{
-                                    padding: '4px 12px',
-                                    borderRadius: '20px',
-                                    fontSize: '0.75rem',
-                                    fontWeight: 600,
-                                    background: u.isActive ? '#10b98120' : '#ef444420',
-                                    color: u.isActive ? '#10b981' : '#ef4444'
-                                }}>
-                                    {u.isActive ? 'Active' : 'Inactive'}
-                                </span>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <span style={{
+                                        padding: '4px 12px',
+                                        borderRadius: '20px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 600,
+                                        background: u.isActive ? '#10b98120' : '#ef444420',
+                                        color: u.isActive ? '#10b981' : '#ef4444'
+                                    }}>
+                                        {u.isActive ? 'Active' : 'Inactive'}
+                                    </span>
+                                    <button
+                                        onClick={() => handleDelete(u._id)}
+                                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
                             </div>
 
                             <h3 style={{ fontSize: '1.125rem', marginBottom: '4px' }}>{u.name}</h3>
@@ -171,8 +223,11 @@ const Users = () => {
                                     {u.isActive ? <XCircle size={16} /> : <CheckCircle size={16} />}
                                     {u.isActive ? 'Deactivate' : 'Activate'}
                                 </button>
-                                <button style={{ background: 'none', border: 'none', color: 'var(--text-light)', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem' }}>
-                                    Edit Settings
+                                <button
+                                    onClick={() => handleEdit(u)}
+                                    style={{ background: 'none', border: 'none', color: 'var(--text-light)', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                    <Edit size={14} /> Edit
                                 </button>
                             </div>
                         </div>

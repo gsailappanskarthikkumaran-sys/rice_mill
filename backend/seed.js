@@ -32,9 +32,7 @@ const seed = async () => {
         const roles = [
             { name: 'SuperAdmin', email: 'super@mill.com', role: 'SuperAdmin' },
             { name: 'Proprietor', email: 'proprietor@mill.com', role: 'MillOwner' },
-            { name: 'Manager', email: 'manager@mill.com', role: 'MillOwner', branchId: branch._id },
             { name: 'Staff User', email: 'staff@mill.com', role: 'Operator', branchId: branch._id },
-            { name: 'Accountant', email: 'accountant@mill.com', role: 'Accountant', branchId: branch._id }
         ];
 
         console.log('Creating Users...');

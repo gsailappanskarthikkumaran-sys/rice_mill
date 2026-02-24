@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 // v2.0.1 - Data robustness update
 import api from '../utils/api';
-import { FileText, Plus, Save, History, Calculator } from 'lucide-react';
+import { FileText, Plus, Save, History, Calculator, Trash2 } from 'lucide-react';
+import InvoiceModal from '../components/InvoiceModal';
 
 const Sales = () => {
     const [sales, setSales] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
+    const [tenant, setTenant] = useState(null);
+    const [selectedInvoice, setSelectedInvoice] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const [formData, setFormData] = useState({
         customerName: '',
@@ -19,6 +23,7 @@ const Sales = () => {
 
     useEffect(() => {
         fetchData();
+        fetchTenantInfo();
     }, []);
 
     const fetchData = async () => {
@@ -31,6 +36,31 @@ const Sales = () => {
             setSales([]);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchTenantInfo = async () => {
+        try {
+            // Note: Assuming there's a route to get current tenant or it's returned with login
+            // For now, let's try to get it from settings/profile if it exists
+            const res = await api.get('/auth/me');
+            if (res.data?.tenantId) {
+                // If we need more details, we might need a specific tenant fetch
+                // But usually, user profile has tenant details
+                setTenant(res.data.tenantId);
+            }
+        } catch (error) {
+            console.error('Error fetching tenant info:', error);
+        }
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure? Total amount will be reverted to stock.')) return;
+        try {
+            await api.delete(`/sales/${id}`);
+            fetchData();
+        } catch (err) {
+            alert('Failed to delete record');
         }
     };
 
@@ -57,6 +87,11 @@ const Sales = () => {
         } catch (error) {
             alert('Failed to create invoice');
         }
+    };
+
+    const handleViewInvoice = (invoice) => {
+        setSelectedInvoice(invoice);
+        setIsModalOpen(true);
     };
 
     if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div>;
@@ -211,9 +246,20 @@ const Sales = () => {
                                         </span>
                                     </td>
                                     <td>
-                                        <button style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600 }}>
-                                            View PDF
-                                        </button>
+                                        <div style={{ display: 'flex', gap: '20px' }}>
+                                            <button
+                                                onClick={() => handleViewInvoice(s)}
+                                                style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600 }}
+                                            >
+                                                View PDF
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(s._id)}
+                                                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -227,6 +273,13 @@ const Sales = () => {
                     )}
                 </div>
             )}
+
+            <InvoiceModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                invoice={selectedInvoice}
+                tenant={tenant}
+            />
         </div>
     );
 };

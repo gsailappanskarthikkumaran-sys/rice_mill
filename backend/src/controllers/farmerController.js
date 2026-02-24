@@ -17,8 +17,14 @@ exports.getFarmers = async (req, res, next) => {
 // @access  Private
 exports.createFarmer = async (req, res, next) => {
     try {
-        req.body.tenantId = req.tenantId;
-        const farmer = await Farmer.create(req.body);
+        const farmerData = { ...req.body, tenantId: req.tenantId };
+
+        // Safety: If frontend still sends phoneNumber, map it to mobile
+        if (req.body.phoneNumber && !req.body.mobile) {
+            farmerData.mobile = req.body.phoneNumber;
+        }
+
+        const farmer = await Farmer.create(farmerData);
         res.status(201).json(farmer);
     } catch (error) {
         next(error);
