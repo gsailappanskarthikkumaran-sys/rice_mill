@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Multi-Tenant & Multi-Branch Rice Mill Management System
 
 A production-level SaaS ERP application built with the MERN stack, designed for rice mill businesses to manage paddy procurement, production (milling), stock isolation, and sales tracking across multiple branches and tenants.
@@ -44,3 +45,6 @@ This project follows a **Shared Database, Shared Schema** multi-tenant architect
 - `Stocks`: Real-time inventory (branch-wise).
 - `Production`: Conversion records (Paddy -> Rice).
 - `Sales`: Invoices and revenue tracking.
+=======
+# rice_mill
+>>>>>>> ed239dbb326c9172614464f28ef7bed5fce4ce07
