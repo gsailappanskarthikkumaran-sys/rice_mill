@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const User = require('./src/models/User');
 const Tenant = require('./src/models/Tenant');
+const Branch = require('./src/models/Branch');
 require('dotenv').config();
 
 const seed = async () => {
@@ -8,28 +9,46 @@ const seed = async () => {
         console.log('Connecting to MongoDB...');
         await mongoose.connect(process.env.MONGODB_URI);
 
-        // Clean existing data for this test user to avoid duplicates
-        await User.deleteOne({ email: 'proprietor@mill.com' });
+        // Clean existing data
+        await User.deleteMany({ email: /@mill.com$/ });
         await Tenant.deleteOne({ slug: 'indian-mill' });
+        await Branch.deleteMany({ name: 'Main Branch' });
 
         console.log('Creating Tenant...');
         const tenant = await Tenant.create({
-            name: 'Indian Rice Mill',
+            millName: 'Indian Rice Mill',
+            ownerName: 'Proprietor Name',
+            contactNumber: '9988776655',
             slug: 'indian-mill'
         });
 
-        console.log('Creating Admin User...');
-        const user = await User.create({
+        console.log('Creating Branch...');
+        const branch = await Branch.create({
             tenantId: tenant._id,
-            name: 'Proprietor',
-            email: 'proprietor@mill.com',
-            password: 'password123',
-            role: 'TenantAdmin'
+            name: 'Main Branch',
+            location: 'Nellore, AP'
         });
 
+        const roles = [
+            { name: 'SuperAdmin', email: 'super@mill.com', role: 'SuperAdmin' },
+            { name: 'Proprietor', email: 'proprietor@mill.com', role: 'MillOwner' },
+            { name: 'Manager', email: 'manager@mill.com', role: 'MillOwner', branchId: branch._id },
+            { name: 'Staff User', email: 'staff@mill.com', role: 'Operator', branchId: branch._id },
+            { name: 'Accountant', email: 'accountant@mill.com', role: 'Accountant', branchId: branch._id }
+        ];
+
+        console.log('Creating Users...');
+        for (const roleData of roles) {
+            await User.create({
+                tenantId: tenant._id,
+                ...roleData,
+                password: 'password123'
+            });
+        }
+
         console.log('--- SEED SUCCESS ---');
-        console.log('Email: proprietor@mill.com');
-        console.log('Password: password123');
+        console.log('Password for all users: password123');
+        roles.forEach(r => console.log(`${r.role}: ${r.email}`));
         console.log('--------------------');
 
     } catch (error) {

@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+// v2.0.1 - Robust analytics fetching
+import api from '../utils/api';
 import {
     TrendingUp,
-    ArrowUpRight,
-    ArrowDownRight,
     ShoppingCart,
     Tractor,
-    Package
+    Package,
+    Loader2
 } from 'lucide-react';
 import {
     Chart as ChartJS,
@@ -20,7 +21,7 @@ import {
     ArcElement,
     Filler
 } from 'chart.js';
-import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import { Line, Doughnut } from 'react-chartjs-2';
 
 ChartJS.register(
     CategoryScale,
@@ -35,12 +36,65 @@ ChartJS.register(
     Legend
 );
 
+import InfoCard from '../components/InfoCard';
+
 const Dashboard = () => {
+    const [data, setData] = useState({
+        stocks: { paddyStock: 0, riceStock: 0, huskStock: 0 },
+        sales: { totalRevenue: 0, totalQuantity: 0, count: 0 }
+    });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                setLoading(true);
+                const [stockRes, salesRes] = await Promise.all([
+                    api.get('/stocks').catch(err => ({ data: { paddyStock: 0, riceStock: 0, huskStock: 0 } })),
+                    api.get('/sales/analytics').catch(err => ({ data: { totalRevenue: 0, totalQuantity: 0, count: 0 } }))
+                ]);
+                setData({
+                    stocks: (stockRes && stockRes.data) ? stockRes.data : { paddyStock: 0, riceStock: 0, huskStock: 0 },
+                    sales: (salesRes && salesRes.data) ? salesRes.data : { totalRevenue: 0, totalQuantity: 0, count: 0 }
+                });
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchDashboardData();
+    }, []);
+
     const stats = [
-        { label: 'Total Revenue', value: '₹12.55 Lakh', change: '+12.5%', color: 'var(--primary-600)', bg: 'var(--primary-50)', icon: TrendingUp },
-        { label: 'Paddy Stock (Raw)', value: '2,450 Qtl', change: '-2.4%', color: 'var(--orange-600)', bg: 'var(--orange-50)', icon: Tractor },
-        { label: 'Rice Stock (Steam)', value: '1,120 Qtl', change: '+5.2%', color: 'var(--green-600)', bg: 'var(--primary-50)', icon: Package },
-        { label: 'Monthly Sales', value: '₹4.20 Lakh', change: '+18.2%', color: 'var(--purple-600)', bg: 'var(--primary-50)', icon: ShoppingCart },
+        {
+            title: 'Total Revenue',
+            value: `₹${((data.sales?.totalRevenue || 0) / 1000).toFixed(2)}K`,
+            trend: 'up',
+            trendValue: 0,
+            icon: TrendingUp
+        },
+        {
+            title: 'Paddy Stock',
+            value: `${data.stocks?.paddyStock || 0} kg`,
+            trend: 'none',
+            trendValue: 0,
+            icon: Tractor
+        },
+        {
+            title: 'Rice Stock',
+            value: `${data.stocks?.riceStock || 0} kg`,
+            trend: 'none',
+            trendValue: 0,
+            icon: Package
+        },
+        {
+            title: 'Sales Count',
+            value: data.sales?.count || 0,
+            trend: 'none',
+            trendValue: 0,
+            icon: ShoppingCart
+        },
     ];
 
     const chartData = {
@@ -48,75 +102,84 @@ const Dashboard = () => {
         datasets: [
             {
                 label: 'Revenue (₹)',
-                data: [40, 55, 45, 70, 65, 85],
-                borderColor: '#0ea5e9',
-                backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                data: [40, 55, 45, 70, 65, ((data.sales?.totalRevenue || 0) / 1000) || 0],
+                borderColor: '#4361ee',
+                backgroundColor: 'rgba(67, 97, 238, 0.1)',
                 fill: true,
                 tension: 0.4,
             },
         ],
     };
 
+    if (loading) {
+        return (
+            <div style={{ height: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
+                <Loader2 className="animate-spin" size={48} color="var(--primary)" />
+                <p style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Syncing Dashboard Data...</p>
+            </div>
+        );
+    }
+
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-            <div className="flex-between">
+        <div className="fade-in">
+            <div className="dashboard-header flex-between" style={{ marginBottom: '32px' }}>
                 <div>
-                    <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--slate-900)' }}>Mill Analytics (Indian Standards)</h1>
-                    <p style={{ color: 'var(--slate-500)' }}>Welcome back, track your stock in Quintals and Bags.</p>
-                </div>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                    <button className="btn btn-secondary">Mandi Report</button>
-                    <button className="btn btn-primary">New Purchase (Paddy)</button>
+                    <h1 style={{ fontSize: '1.875rem', fontWeight: 800, marginBottom: '8px' }}>Mill Performance Overview</h1>
+                    <p style={{ color: 'var(--text-muted)' }}>Real-time procurement, production, and sales metrics</p>
                 </div>
             </div>
 
-            <div className="grid-stats">
+            <div className="stats-grid" style={{ marginBottom: '32px' }}>
                 {stats.map((stat) => (
-                    <div key={stat.label} className="stat-card">
-                        <div className="flex-between">
-                            <div style={{ padding: '8px', borderRadius: '8px', backgroundColor: stat.bg, color: stat.color, display: 'flex' }}>
-                                <stat.icon style={{ width: '24px', height: '24px' }} />
-                            </div>
-                            <span style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                fontSize: '12px',
-                                fontWeight: 'bold',
-                                color: stat.change.startsWith('+') ? 'var(--green-600)' : 'var(--red-600)'
-                            }}>
-                                {stat.change}
-                                {stat.change.startsWith('+') ? <ArrowUpRight style={{ width: '12px', height: '12px', marginLeft: '2px' }} /> : <ArrowDownRight style={{ width: '12px', height: '12px', marginLeft: '2px' }} />}
-                            </span>
-                        </div>
-                        <div style={{ marginTop: '16px' }}>
-                            <h3 style={{ color: 'var(--slate-500)', fontSize: '14px', fontWeight: '500' }}>{stat.label}</h3>
-                            <p style={{ fontSize: '24px', fontWeight: '700', color: 'var(--slate-900)', marginTop: '4px' }}>{stat.value}</p>
-                        </div>
-                    </div>
+                    <InfoCard key={stat.title} {...stat} />
                 ))}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
-                <div className="card" style={{ gridColumn: 'span 2' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--slate-900)', marginBottom: '24px' }}>Revenue Growth (Lakh ₹)</h3>
-                    <Line data={chartData} options={{ responsive: true, plugins: { legend: { display: false } } }} />
-                </div>
-                <div className="card">
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--slate-900)', marginBottom: '24px' }}>Milling Yield (Average)</h3>
-                    <div style={{ maxWidth: '240px', margin: '0 auto' }}>
-                        <Doughnut
-                            data={{
-                                labels: ['Rice', 'Broken', 'Husk', 'Bran'],
-                                datasets: [{
-                                    data: [67, 4, 20, 9],
-                                    backgroundColor: ['#0ea5e9', '#f97316', '#10b981', '#8b5cf6'],
-                                }]
+            <div className="stats-container" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
+                <div className="glass-card" style={{ padding: '24px' }}>
+                    <h3 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '8px' }}>Revenue Performance</h3>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '24px' }}>Monthly growth and projections</p>
+                    <div style={{ height: '300px' }}>
+                        <Line
+                            data={chartData}
+                            options={{
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { display: false } },
+                                scales: {
+                                    y: { grid: { borderDash: [5, 5] }, ticks: { callback: (v) => `₹${v}K` } },
+                                    x: { grid: { display: false } }
+                                }
                             }}
-                            options={{ responsive: true, cutout: '70%' }}
                         />
                     </div>
-                    <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '14px', color: 'var(--slate-500)' }}>
-                        Standard Out-turn: 67%
+                </div>
+
+                <div className="glass-card" style={{ padding: '24px' }}>
+                    <h3 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '24px' }}>Stock Distribution</h3>
+                    <div style={{ height: '240px', position: 'relative' }}>
+                        <Doughnut
+                            data={{
+                                labels: ['Rice', 'Paddy', 'Husk'],
+                                datasets: [{
+                                    data: [data.stocks?.riceStock || 0, data.stocks?.paddyStock || 0, data.stocks?.huskStock || 0],
+                                    backgroundColor: ['#4361ee', '#10b981', '#f59e0b'],
+                                    borderWidth: 0,
+                                    hoverOffset: 15
+                                }]
+                            }}
+                            options={{
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                cutout: '75%',
+                                plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } }
+                            }}
+                        />
+                    </div>
+                    <div style={{ marginTop: '32px', textAlign: 'center', background: 'var(--primary-light)', padding: '16px', borderRadius: '12px' }}>
+                        <p style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--primary)' }}>
+                            Current Inventory Balance: {(((data.stocks?.riceStock || 0) + (data.stocks?.paddyStock || 0) + (data.stocks?.huskStock || 0)) / 1000).toFixed(1)} Tons
+                        </p>
                     </div>
                 </div>
             </div>

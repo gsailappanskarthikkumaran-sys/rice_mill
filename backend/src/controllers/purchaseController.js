@@ -9,20 +9,10 @@ exports.createPurchase = async (req, res, next) => {
         req.body.tenantId = req.tenantId;
         const purchase = await Purchase.create(req.body);
 
-        // Update Stock with variety awareness
+        // Update Stock (Atomic Increment)
         await Stock.findOneAndUpdate(
-            {
-                tenantId: req.tenantId,
-                branchId: req.body.branchId,
-                itemName: req.body.itemType || 'Paddy',
-                variety: req.body.variety || 'Common'
-            },
-            {
-                $inc: {
-                    quantity: req.body.quantity,
-                    bags: req.body.numberOfBags || 0
-                }
-            },
+            { tenantId: req.tenantId },
+            { $inc: { paddyStock: req.body.weight } },
             { upsert: true, new: true }
         );
 
@@ -38,8 +28,8 @@ exports.createPurchase = async (req, res, next) => {
 exports.getPurchases = async (req, res, next) => {
     try {
         const purchases = await Purchase.find({ tenantId: req.tenantId })
-            .populate('branchId', 'name')
-            .populate('supplierId', 'name');
+            .populate('farmerId', 'farmerName village')
+            .sort({ date: -1 });
         res.status(200).json(purchases);
     } catch (error) {
         next(error);

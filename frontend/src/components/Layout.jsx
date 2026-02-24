@@ -15,7 +15,7 @@ const Layout = () => {
             <Sidebar />
             <div className="main-content">
                 <Navbar />
-                <main className="page-container">
+                <main className="page-container fade-in">
                     <Outlet />
                 </main>
             </div>

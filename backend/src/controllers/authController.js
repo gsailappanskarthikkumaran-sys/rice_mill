@@ -12,21 +12,23 @@ const generateToken = (id) => {
 // @access  Public
 exports.register = async (req, res, next) => {
     try {
-        const { companyName, companySlug, name, email, password } = req.body;
+        const { millName, ownerName, contactNumber, email, password, companySlug } = req.body;
 
         // Create Tenant first
         const tenant = await Tenant.create({
-            name: companyName,
-            slug: companySlug
+            millName,
+            ownerName,
+            contactNumber,
+            slug: companySlug || millName.toLowerCase().replace(/ /g, '-')
         });
 
-        // Create Admin User for this tenant
+        // Create Admin User for this tenant (MillOwner)
         const user = await User.create({
             tenantId: tenant._id,
-            name,
+            name: ownerName,
             email,
             password,
-            role: 'TenantAdmin'
+            role: 'MillOwner'
         });
 
         res.status(201).json({

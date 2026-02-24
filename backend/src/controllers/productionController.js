@@ -1,64 +1,43 @@
 const Production = require('../models/Production');
 const Stock = require('../models/Stock');
 
-// @desc    Record production (Paddy -> Rice/Broken/Husk/Bran)
+// @desc    Record production (Paddy -> Rice/Husk/Wastage)
 // @route   POST /api/production
 // @access  Private
 exports.createProduction = async (req, res, next) => {
     try {
-        const {
-            branchId,
-            paddyVariety,
-            riceVariety,
-            paddyUsed,
-            riceProduced,
-            brokenRiceProduced,
-            huskProduced,
-            branProduced
-        } = req.body;
+        const { inputPaddy, outputRice, husk, wastage } = req.body;
 
         req.body.tenantId = req.tenantId;
         const production = await Production.create(req.body);
 
-        // 1. Decrease Paddy Stock (specific variety)
+        // Update Stock (Atomic Updates)
         await Stock.findOneAndUpdate(
-            { tenantId: req.tenantId, branchId, itemName: 'Paddy', variety: paddyVariety || 'Common' },
-            { $inc: { quantity: -paddyUsed } }
-        );
-
-        // 2. Increase Rice Stock (specific variety)
-        await Stock.findOneAndUpdate(
-            { tenantId: req.tenantId, branchId, itemName: 'Rice', variety: riceVariety },
-            { $inc: { quantity: riceProduced } },
+            { tenantId: req.tenantId },
+            {
+                $inc: {
+                    paddyStock: -inputPaddy,
+                    riceStock: outputRice,
+                    huskStock: husk
+                }
+            },
             { upsert: true }
         );
 
-        // 3. Increase Broken Rice Stock
-        if (brokenRiceProduced) {
-            await Stock.findOneAndUpdate(
-                { tenantId: req.tenantId, branchId, itemName: 'Broken Rice', variety: riceVariety },
-                { $inc: { quantity: brokenRiceProduced } },
-                { upsert: true }
-            );
-        }
-
-        // 4. Increase By-products stock
-        if (huskProduced) {
-            await Stock.findOneAndUpdate(
-                { tenantId: req.tenantId, branchId, itemName: 'Husk', variety: 'Standard' },
-                { $inc: { quantity: huskProduced } },
-                { upsert: true }
-            );
-        }
-        if (branProduced) {
-            await Stock.findOneAndUpdate(
-                { tenantId: req.tenantId, branchId, itemName: 'Bran', variety: 'Standard' },
-                { $inc: { quantity: branProduced } },
-                { upsert: true }
-            );
-        }
-
         res.status(201).json(production);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get all production logs for a tenant
+// @route   GET /api/production
+// @access  Private
+exports.getProductions = async (req, res, next) => {
+    try {
+        const productions = await Production.find({ tenantId: req.tenantId })
+            .sort({ productionDate: -1 });
+        res.status(200).json(productions);
     } catch (error) {
         next(error);
     }

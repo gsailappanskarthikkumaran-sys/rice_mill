@@ -1,0 +1,90 @@
+.info-card {
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    border: 1px solid var(--border-color);
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    cursor: pointer;
+}
+
+.info-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: var(--shadow-xl);
+    border-color: var(--primary);
+}
+
+.info-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(to bottom, var(--primary), var(--primary-dark));
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.info-card:hover::before {
+    opacity: 1;
+}
+
+.info-card-icon {
+    width: 48px;
+    height: 48px;
+    background: var(--primary-light);
+    color: var(--primary);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s;
+}
+
+.info-card:hover .info-card-icon {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.info-card-title {
+    font-size: 18px;
+    color: var(--text-main);
+    font-weight: 700;
+}
+
+.info-card-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--primary);
+    margin-top: 4px;
+}
+
+.info-card-footer {
+    font-size: 13px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: auto;
+}
+
+.badge-trend {
+    padding: 4px 8px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.badge-up {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.badge-down {
+    background: #fef2f2;
+    color: #dc2626;
+}

@@ -8,30 +8,20 @@ exports.createSale = async (req, res, next) => {
     try {
         req.body.tenantId = req.tenantId;
 
-        // Calculate GST if not provided
-        if (!req.body.taxAmount && (req.body.cgst || req.body.sgst || req.body.igst)) {
-            req.body.taxAmount = (req.body.cgst || 0) + (req.body.sgst || 0) + (req.body.igst || 0);
+        // Backend calculation for security and data integrity
+        if (!req.body.totalAmount) {
+            const subtotal = (Number(req.body.riceQuantity) || 0) * (Number(req.body.pricePerKg) || 0);
+            const gstAmount = subtotal * ((Number(req.body.gstPercentage) || 0) / 100);
+            req.body.totalAmount = subtotal + gstAmount;
         }
 
         const sale = await Sale.create(req.body);
 
-        // Update Stock for each item sold (Variety Aware)
-        for (const item of req.body.items) {
-            await Stock.findOneAndUpdate(
-                {
-                    tenantId: req.tenantId,
-                    branchId: req.body.branchId,
-                    itemName: item.itemName,
-                    variety: item.variety || 'Standard'
-                },
-                {
-                    $inc: {
-                        quantity: -item.quantity,
-                        bags: -(item.numberOfBags || 0)
-                    }
-                }
-            );
-        }
+        // Update Stock (Atomic Decrement)
+        await Stock.findOneAndUpdate(
+            { tenantId: req.tenantId },
+            { $inc: { riceStock: -req.body.riceQuantity } }
+        );
 
         res.status(201).json(sale);
     } catch (error) {
@@ -47,13 +37,27 @@ exports.getAnalytics = async (req, res, next) => {
             { $match: { tenantId: req.tenantId } },
             {
                 $group: {
-                    _id: '$branchId',
-                    totalRevenue: { $sum: '$grandTotal' },
+                    _id: '$tenantId',
+                    totalRevenue: { $sum: '$totalAmount' },
+                    totalQuantity: { $sum: '$riceQuantity' },
                     count: { $sum: 1 }
                 }
             }
         ]);
-        res.status(200).json(stats);
+        res.status(200).json(stats[0] || { totalRevenue: 0, totalQuantity: 0, count: 0 });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get all sales logs for a tenant
+// @route   GET /api/sales
+// @access  Private
+exports.getSales = async (req, res, next) => {
+    try {
+        const sales = await Sale.find({ tenantId: req.tenantId })
+            .sort({ date: -1 });
+        res.status(200).json(sales);
     } catch (error) {
         next(error);
     }

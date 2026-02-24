@@ -3,6 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Wheat, Lock, Mail, ArrowRight } from 'lucide-react';
 
+import './Login.css';
+
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -21,92 +23,56 @@ const Login = () => {
     };
 
     return (
-        <div className="auth-screen">
-            <div className="auth-card">
-                <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-                    <div style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '64px',
-                        height: '64px',
-                        backgroundColor: 'var(--primary-600)',
-                        borderRadius: '16px',
-                        marginBottom: '16px',
-                        boxShadow: '0 10px 15px -3px var(--primary-200)'
-                    }}>
-                        <Wheat style={{ color: 'white', width: '32px', height: '32px' }} />
+        <div className="login-page">
+            <div className="login-card fade-in">
+                <div className="login-header">
+                    <div style={{ display: 'inline-flex', padding: '16px', background: 'var(--primary)', borderRadius: '16px', marginBottom: '24px' }}>
+                        <Wheat size={32} color="white" />
                     </div>
-                    <h1 style={{ fontSize: '30px', fontWeight: 'bold', color: 'var(--slate-900)' }}>Welcome Back</h1>
-                    <p style={{ color: 'var(--slate-500)', marginTop: '8px' }}>Sign in to manage your rice mill business</p>
+                    <h1 className="login-title">Welcome</h1>
+                    <p className="login-subtitle">Sign in to the Rice Mill Management System</p>
                 </div>
 
-                <div className="card" style={{ padding: '32px', shadow: 'var(--shadow-xl)' }}>
-                    {error && (
-                        <div style={{
-                            marginBottom: '24px',
-                            padding: '16px',
-                            backgroundColor: 'var(--red-50)',
-                            color: 'var(--red-600)',
-                            borderRadius: '8px',
-                            fontSize: '14px',
-                            border: '1px solid var(--red-100)'
-                        }}>
-                            {error}
-                        </div>
-                    )}
-                    <form onSubmit={handleSubmit}>
-                        <div className="input-group">
-                            <label className="input-label">Email Address</label>
-                            <div style={{ position: 'relative' }}>
-                                <Mail style={{ position: 'absolute', left: '12px', top: '12px', width: '20px', height: '20px', color: 'var(--slate-400)' }} />
-                                <input
-                                    type="email"
-                                    required
-                                    className="input-field"
-                                    style={{ paddingLeft: '40px' }}
-                                    placeholder="admin@ricemill.com"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                />
-                            </div>
-                        </div>
-                        <div className="input-group">
-                            <label className="input-label">Password</label>
-                            <div style={{ position: 'relative' }}>
-                                <Lock style={{ position: 'absolute', left: '12px', top: '12px', width: '20px', height: '20px', color: 'var(--slate-400)' }} />
-                                <input
-                                    type="password"
-                                    required
-                                    className="input-field"
-                                    style={{ paddingLeft: '40px' }}
-                                    placeholder="••••••••"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                />
-                            </div>
-                        </div>
-                        <button
-                            type="submit"
-                            className="btn btn-primary"
-                            style={{
-                                width: '100%',
-                                padding: '16px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '8px',
-                                fontSize: '16px'
-                            }}
-                        >
-                            <span>Sign In</span>
-                            <ArrowRight style={{ width: '20px', height: '20px' }} />
-                        </button>
-                    </form>
+                {error && (
+                    <div style={{ marginBottom: '24px', padding: '12px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderRadius: '8px', fontSize: '14px', textAlign: 'center' }}>
+                        {error}
+                    </div>
+                )}
+
+                <form onSubmit={handleSubmit}>
+                    <div className="form-group">
+                        <label className="form-label">Email Address</label>
+                        <input
+                            type="email"
+                            required
+                            className="login-input"
+                            placeholder="admin@ricemill.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label className="form-label">Password</label>
+                        <input
+                            type="password"
+                            required
+                            className="login-input"
+                            placeholder="••••••••"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        className="btn-primary login-btn"
+                    >
+                        Sign In <ArrowRight size={20} />
+                    </button>
+                </form>
+
+                <div className="login-footer">
+                    Need help? <Link to="/support">Contact support</Link>
                 </div>
-                <p style={{ textAlign: 'center', marginTop: '32px', color: 'var(--slate-500)' }}>
-                    Don't have an account? <Link to="/register" style={{ color: 'var(--primary-600)', fontWeight: '600', textDecoration: 'none' }}>Get Started</Link>
-                </p>
             </div>
         </div>
     );

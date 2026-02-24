@@ -4,15 +4,15 @@ import { AuthProvider } from './context/AuthContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-
-// Placeholder components
-const Purchase = () => <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm">Paddy Purchase Module</div>;
-const Production = () => <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm">Production Module</div>;
-const Sales = () => <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm">Sales & Invoice Module</div>;
-const Stocks = () => <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm">Stock Management</div>;
-const Suppliers = () => <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm">Supplier Management</div>;
-const Users = () => <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm">User Management</div>;
-const Settings = () => <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm">Settings Module</div>;
+import Purchase from './pages/Purchase';
+import Production from './pages/Production';
+import Sales from './pages/Sales';
+import Stocks from './pages/Stocks';
+import Users from './pages/Users';
+import Farmers from './pages/Farmers';
+import Tenants from './pages/Tenants'; // For SuperAdmin
+import Suppliers from './pages/Suppliers';
+import Settings from './pages/Settings';
 
 function App() {
     return (
@@ -26,8 +26,10 @@ function App() {
                         <Route path="/production" element={<Production />} />
                         <Route path="/sales" element={<Sales />} />
                         <Route path="/stocks" element={<Stocks />} />
+                        <Route path="/farmers" element={<Farmers />} />
                         <Route path="/suppliers" element={<Suppliers />} />
                         <Route path="/users" element={<Users />} />
+                        <Route path="/tenants" element={<Tenants />} />
                         <Route path="/settings" element={<Settings />} />
                     </Route>
                     <Route path="*" element={<Navigate to="/" replace />} />
