@@ -19,9 +19,14 @@ import { applyTheme } from './utils/theme';
 
 function App() {
     React.useEffect(() => {
-        const savedColor = localStorage.getItem('theme-primary');
-        if (savedColor) {
-            applyTheme(savedColor);
+        const savedTheme = localStorage.getItem('app-theme');
+        if (savedTheme) {
+            try {
+                const { primaryColor, radius } = JSON.parse(savedTheme);
+                applyTheme(primaryColor, radius);
+            } catch (err) {
+                console.error('Failed to parse theme', err);
+            }
         }
     }, []);
 

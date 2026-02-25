@@ -23,6 +23,13 @@ const Settings = () => {
     });
     const [loadingTenant, setLoadingTenant] = useState(true);
 
+    // Branch Management State
+    const [branches, setBranches] = useState([]);
+    const [isAddingBranch, setIsAddingBranch] = useState(false);
+    const [isEditingBranch, setIsEditingBranch] = useState(false);
+    const [branchData, setBranchData] = useState({ name: '', location: '', contact: '' });
+    const [selectedBranchId, setSelectedBranchId] = useState(null);
+
     useEffect(() => {
         const savedTheme = localStorage.getItem('app-theme');
         if (savedTheme) setTheme(JSON.parse(savedTheme));
