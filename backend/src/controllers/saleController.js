@@ -17,6 +17,18 @@ exports.createSale = async (req, res, next) => {
 
         const sale = await Sale.create(req.body);
 
+        // Check for sufficient Rice Stock
+        const stock = await Stock.findOne({ tenantId: req.tenantId });
+        if (!stock || stock.riceStock < req.body.riceQuantity) {
+            // Revert the sale if stock is insufficient (Transaction-like behavior)
+            await Sale.findByIdAndDelete(sale._id);
+            return res.status(400).json({
+                error: 'Insufficient Rice stock',
+                currentStock: stock ? stock.riceStock : 0,
+                required: req.body.riceQuantity
+            });
+        }
+
         // Update Stock (Atomic Decrement)
         await Stock.findOneAndUpdate(
             { tenantId: req.tenantId },
@@ -80,6 +92,28 @@ exports.deleteSale = async (req, res, next) => {
 
         await Sale.findByIdAndDelete(req.params.id);
         res.status(200).json({ message: 'Sale record deleted and stock reverted' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Update sale payment status
+// @route   PATCH /api/sales/:id/status
+// @access  Private
+exports.updateSaleStatus = async (req, res, next) => {
+    try {
+        const { paymentStatus } = req.body;
+        const sale = await Sale.findOneAndUpdate(
+            { _id: req.params.id, tenantId: req.tenantId },
+            { paymentStatus },
+            { new: true, runValidators: true }
+        );
+
+        if (!sale) {
+            return res.status(404).json({ error: 'Sale record not found' });
+        }
+
+        res.status(200).json(sale);
     } catch (error) {
         next(error);
     }

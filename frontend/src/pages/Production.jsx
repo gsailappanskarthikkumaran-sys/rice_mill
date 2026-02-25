@@ -47,7 +47,8 @@ const Production = () => {
             });
             fetchData();
         } catch (error) {
-            alert('Failed to record production batch');
+            const msg = error.response?.data?.error || 'Failed to record production batch';
+            alert(msg);
         }
     };
 

@@ -5,6 +5,9 @@ const tenantSchema = new mongoose.Schema({
     ownerName: { type: String, required: true },
     address: String,
     contactNumber: { type: String, required: true },
+    email: String,
+    website: String,
+    gstNumber: String,
     subscriptionPlan: { type: String, enum: ['Basic', 'Premium'], default: 'Basic' },
     status: { type: String, enum: ['Active', 'Inactive', 'Deactivated'], default: 'Active' },
     slug: { type: String, required: true, unique: true }

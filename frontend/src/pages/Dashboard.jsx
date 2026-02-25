@@ -77,14 +77,14 @@ const Dashboard = () => {
         {
             title: 'Paddy Stock',
             value: `${data.stocks?.paddyStock || 0} kg`,
-            trend: 'none',
+            trend: data.stocks?.paddyStock < 500 ? 'down' : 'none',
             trendValue: 0,
             icon: Tractor
         },
         {
             title: 'Rice Stock',
             value: `${data.stocks?.riceStock || 0} kg`,
-            trend: 'none',
+            trend: data.stocks?.riceStock < 500 ? 'down' : 'none',
             trendValue: 0,
             icon: Package
         },
@@ -97,16 +97,22 @@ const Dashboard = () => {
         },
     ];
 
+    const lowStockAlerts = [];
+    if (data.stocks?.paddyStock < 500) lowStockAlerts.push(`Paddy Stock is low (${data.stocks.paddyStock}kg)`);
+    if (data.stocks?.riceStock < 500) lowStockAlerts.push(`Rice Stock is low (${data.stocks.riceStock}kg)`);
+
     const chartData = {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Today'],
         datasets: [
             {
                 label: 'Revenue (₹)',
-                data: [40, 55, 45, 70, 65, ((data.sales?.totalRevenue || 0) / 1000) || 0],
+                data: [40, 55, 45, 70, 65, (data.sales?.totalRevenue / 1000) || 0],
                 borderColor: '#4361ee',
                 backgroundColor: 'rgba(67, 97, 238, 0.1)',
                 fill: true,
                 tension: 0.4,
+                pointRadius: 6,
+                pointHoverRadius: 8
             },
         ],
     };
@@ -129,6 +135,25 @@ const Dashboard = () => {
                 </div>
             </div>
 
+            {lowStockAlerts.length > 0 && (
+                <div style={{
+                    marginBottom: '24px',
+                    padding: '16px 24px',
+                    background: '#fee2e2',
+                    border: '1px solid #fecaca',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    color: '#991b1b',
+                    fontSize: '0.875rem',
+                    fontWeight: 600
+                }}>
+                    <Package size={20} />
+                    <span>Inventory Alert: {lowStockAlerts.join(' | ')}</span>
+                </div>
+            )}
+
             <div className="stats-grid" style={{ marginBottom: '32px' }}>
                 {stats.map((stat) => (
                     <InfoCard key={stat.title} {...stat} />
@@ -137,8 +162,12 @@ const Dashboard = () => {
 
             <div className="stats-container" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
                 <div className="glass-card" style={{ padding: '24px' }}>
-                    <h3 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '8px' }}>Revenue Performance</h3>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '24px' }}>Monthly growth and projections</p>
+                    <div className="flex-between" style={{ marginBottom: '24px' }}>
+                        <div>
+                            <h3 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '4px' }}>Revenue Performance</h3>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Growth trend over current period</p>
+                        </div>
+                    </div>
                     <div style={{ height: '300px' }}>
                         <Line
                             data={chartData}
@@ -147,8 +176,12 @@ const Dashboard = () => {
                                 maintainAspectRatio: false,
                                 plugins: { legend: { display: false } },
                                 scales: {
-                                    y: { grid: { borderDash: [5, 5] }, ticks: { callback: (v) => `₹${v}K` } },
-                                    x: { grid: { display: false } }
+                                    y: {
+                                        beginAtZero: true,
+                                        grid: { color: '#e2e8f0', borderDash: [5, 5] },
+                                        ticks: { callback: (v) => `₹${v}K`, font: { size: 11 } }
+                                    },
+                                    x: { grid: { display: false }, ticks: { font: { size: 11 } } }
                                 }
                             }}
                         />
@@ -164,22 +197,41 @@ const Dashboard = () => {
                                 datasets: [{
                                     data: [data.stocks?.riceStock || 0, data.stocks?.paddyStock || 0, data.stocks?.huskStock || 0],
                                     backgroundColor: ['#4361ee', '#10b981', '#f59e0b'],
+                                    hoverBackgroundColor: ['#3046bc', '#059669', '#d97706'],
                                     borderWidth: 0,
-                                    hoverOffset: 15
+                                    hoverOffset: 12
                                 }]
                             }}
                             options={{
                                 responsive: true,
                                 maintainAspectRatio: false,
                                 cutout: '75%',
-                                plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } }
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom',
+                                        labels: {
+                                            usePointStyle: true,
+                                            pointStyle: 'circle',
+                                            padding: 20,
+                                            font: { size: 12, weight: '600' }
+                                        }
+                                    }
+                                }
                             }}
                         />
-                    </div>
-                    <div style={{ marginTop: '32px', textAlign: 'center', background: 'var(--primary-light)', padding: '16px', borderRadius: '12px' }}>
-                        <p style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--primary)' }}>
-                            Current Inventory Balance: {(((data.stocks?.riceStock || 0) + (data.stocks?.paddyStock || 0) + (data.stocks?.huskStock || 0)) / 1000).toFixed(1)} Tons
-                        </p>
+                        <div style={{
+                            position: 'absolute',
+                            top: '42%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            textAlign: 'center',
+                            pointerEvents: 'none'
+                        }}>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Total</p>
+                            <p style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                                {(((data.stocks?.riceStock || 0) + (data.stocks?.paddyStock || 0)) / 1000).toFixed(1)}t
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>

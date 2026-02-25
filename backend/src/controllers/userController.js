@@ -6,8 +6,14 @@ const bcrypt = require('bcryptjs');
 // @access  Private
 exports.getUsers = async (req, res, next) => {
     try {
-        const users = await User.find({ tenantId: req.tenantId })
-            .select('-password');
+        const query = { tenantId: req.tenantId };
+
+        // Safety: Non-SuperAdmins should never see SuperAdmin details
+        if (req.user.role !== 'SuperAdmin') {
+            query.role = { $ne: 'SuperAdmin' };
+        }
+
+        const users = await User.find(query).select('-password');
         res.status(200).json(users);
     } catch (error) {
         next(error);
@@ -38,10 +44,17 @@ exports.createUser = async (req, res, next) => {
 exports.updateUser = async (req, res, next) => {
     try {
         const { name, email, role, password } = req.body;
-        const user = await User.findOne({ _id: req.params.id, tenantId: req.tenantId });
+        const query = { _id: req.params.id, tenantId: req.tenantId };
+
+        // Safety: Non-SuperAdmins cannot modify SuperAdmin accounts
+        if (req.user.role !== 'SuperAdmin') {
+            query.role = { $ne: 'SuperAdmin' };
+        }
+
+        const user = await User.findOne(query);
 
         if (!user) {
-            return res.status(404).json({ error: 'User not found' });
+            return res.status(404).json({ error: 'User not found or access denied' });
         }
 
         if (name) user.name = name;
@@ -67,9 +80,16 @@ exports.updateUser = async (req, res, next) => {
 // @access  Private (MillOwner or SuperAdmin)
 exports.deleteUser = async (req, res, next) => {
     try {
-        const user = await User.findOneAndDelete({ _id: req.params.id, tenantId: req.tenantId });
+        const query = { _id: req.params.id, tenantId: req.tenantId };
+
+        // Safety: Non-SuperAdmins cannot delete SuperAdmin accounts
+        if (req.user.role !== 'SuperAdmin') {
+            query.role = { $ne: 'SuperAdmin' };
+        }
+
+        const user = await User.findOneAndDelete(query);
         if (!user) {
-            return res.status(404).json({ error: 'User not found' });
+            return res.status(404).json({ error: 'User not found or access denied' });
         }
         res.status(200).json({ message: 'User removed' });
     } catch (error) {
@@ -82,9 +102,16 @@ exports.deleteUser = async (req, res, next) => {
 // @access  Private (MillOwner or SuperAdmin)
 exports.toggleUserStatus = async (req, res, next) => {
     try {
-        const user = await User.findOne({ _id: req.params.id, tenantId: req.tenantId });
+        const query = { _id: req.params.id, tenantId: req.tenantId };
+
+        // Safety: Non-SuperAdmins cannot toggle SuperAdmin accounts
+        if (req.user.role !== 'SuperAdmin') {
+            query.role = { $ne: 'SuperAdmin' };
+        }
+
+        const user = await User.findOne(query);
         if (!user) {
-            return res.status(404).json({ error: 'User not found' });
+            return res.status(404).json({ error: 'User not found or access denied' });
         }
 
         user.isActive = !user.isActive;

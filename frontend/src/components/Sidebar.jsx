@@ -8,14 +8,14 @@ const Sidebar = () => {
     const menuItems = [
         { name: 'Dashboard', icon: LayoutDashboard, path: '/' },
         { name: 'Tenants (Mills)', icon: Building2, path: '/tenants', roles: ['SuperAdmin'] },
-        { name: 'Farmers', icon: Users, path: '/farmers' },
-        { name: 'Suppliers', icon: Truck, path: '/suppliers' },
-        { name: 'Paddy Purchase', icon: Tractor, path: '/purchase' },
-        { name: 'Production', icon: Package, path: '/production' },
-        { name: 'Sales', icon: ShoppingCart, path: '/sales' },
-        { name: 'Stocks', icon: Package, path: '/stocks' },
+        { name: 'Farmers', icon: Users, path: '/farmers', roles: ['SuperAdmin', 'MillOwner', 'Accountant'] },
+        { name: 'Suppliers', icon: Truck, path: '/suppliers', roles: ['SuperAdmin', 'MillOwner', 'Accountant'] },
+        { name: 'Paddy Purchase', icon: Tractor, path: '/purchase', roles: ['SuperAdmin', 'MillOwner', 'Accountant'] },
+        { name: 'Production', icon: Package, path: '/production', roles: ['SuperAdmin', 'MillOwner', 'Operator'] },
+        { name: 'Sales', icon: ShoppingCart, path: '/sales', roles: ['SuperAdmin', 'MillOwner', 'Accountant'] },
+        { name: 'Stocks', icon: Package, path: '/stocks', roles: ['SuperAdmin', 'MillOwner', 'Accountant', 'Operator'] },
         { name: 'Users', icon: Users, path: '/users', roles: ['SuperAdmin', 'MillOwner'] },
-        { name: 'Settings', icon: Settings, path: '/settings' },
+        { name: 'Settings', icon: Settings, path: '/settings', roles: ['SuperAdmin', 'MillOwner'] },
     ];
 
     return (

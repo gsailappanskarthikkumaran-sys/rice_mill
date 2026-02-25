@@ -17,3 +17,28 @@ exports.getStocks = async (req, res, next) => {
         next(error);
     }
 };
+
+// @desc    Update stock levels manually (Adjustment)
+// @route   PUT /api/stocks
+// @access  Private (MillOwner/SuperAdmin)
+exports.updateStocks = async (req, res, next) => {
+    try {
+        const { paddyStock, riceStock, huskStock } = req.body;
+
+        const stock = await Stock.findOneAndUpdate(
+            { tenantId: req.tenantId },
+            {
+                $set: {
+                    ...(paddyStock !== undefined && { paddyStock }),
+                    ...(riceStock !== undefined && { riceStock }),
+                    ...(huskStock !== undefined && { huskStock })
+                }
+            },
+            { new: true, runValidators: true, upsert: true }
+        );
+
+        res.status(200).json(stock);
+    } catch (error) {
+        next(error);
+    }
+};

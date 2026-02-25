@@ -11,6 +11,7 @@ const Sales = () => {
     const [tenant, setTenant] = useState(null);
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const [formData, setFormData] = useState({
         customerName: '',
@@ -54,6 +55,15 @@ const Sales = () => {
         }
     };
 
+    const handleStatusChange = async (id, newStatus) => {
+        try {
+            await api.patch(`/sales/${id}/status`, { paymentStatus: newStatus });
+            fetchData();
+        } catch (err) {
+            alert('Failed to update status');
+        }
+    };
+
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure? Total amount will be reverted to stock.')) return;
         try {
@@ -85,7 +95,8 @@ const Sales = () => {
             });
             fetchData();
         } catch (error) {
-            alert('Failed to create invoice');
+            const msg = error.response?.data?.error || 'Failed to create invoice';
+            alert(msg);
         }
     };
 
@@ -97,6 +108,9 @@ const Sales = () => {
     if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div>;
 
     const currentTotal = calculateTotal(formData);
+    const filteredSales = sales.filter(s =>
+        s.customerName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     return (
         <div className="fade-in">
@@ -105,13 +119,28 @@ const Sales = () => {
                     <h1 style={{ fontSize: '1.875rem', marginBottom: '8px' }}>Sales & Invoicing</h1>
                     <p style={{ color: 'var(--text-muted)' }}>Generate invoices and track customer payments</p>
                 </div>
-                <button
-                    onClick={() => setIsAdding(!isAdding)}
-                    className="btn-primary"
-                >
-                    {isAdding ? <History size={18} /> : <Plus size={18} />}
-                    <span>{isAdding ? 'Invoice History' : 'New Invoice'}</span>
-                </button>
+                <div style={{ display: 'flex', gap: '16px' }}>
+                    {!isAdding && (
+                        <div className="search-container" style={{ position: 'relative' }}>
+                            <input
+                                type="text"
+                                placeholder="Search customer..."
+                                className="form-control"
+                                style={{ width: '250px', paddingLeft: '40px' }}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                            <History size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                        </div>
+                    )}
+                    <button
+                        onClick={() => setIsAdding(!isAdding)}
+                        className="btn-primary"
+                    >
+                        {isAdding ? <History size={18} /> : <Plus size={18} />}
+                        <span>{isAdding ? 'Invoice History' : 'New Invoice'}</span>
+                    </button>
+                </div>
             </div>
 
             {isAdding ? (
@@ -227,23 +256,31 @@ const Sales = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {sales.map((s) => (
+                            {filteredSales.map((s) => (
                                 <tr key={s._id}>
                                     <td>{new Date(s.date).toLocaleDateString()}</td>
                                     <td style={{ fontWeight: 600 }}>{s.customerName}</td>
                                     <td>{s.riceQuantity} kg</td>
-                                    <td style={{ fontWeight: 700, color: 'var(--primary)' }}>₹{s.totalAmount.toLocaleString()}</td>
+                                    <td style={{ fontWeight: 700, color: 'var(--primary)' }}>₹{s.totalAmount?.toLocaleString()}</td>
                                     <td>
-                                        <span style={{
-                                            padding: '4px 12px',
-                                            borderRadius: '20px',
-                                            fontSize: '0.75rem',
-                                            fontWeight: 600,
-                                            background: s.paymentStatus === 'Paid' ? '#10b98120' : '#f59e0b20',
-                                            color: s.paymentStatus === 'Paid' ? '#10b981' : '#f59e0b'
-                                        }}>
-                                            {s.paymentStatus}
-                                        </span>
+                                        <select
+                                            value={s.paymentStatus}
+                                            onChange={(e) => handleStatusChange(s._id, e.target.value)}
+                                            style={{
+                                                padding: '4px 8px',
+                                                borderRadius: '20px',
+                                                fontSize: '0.75rem',
+                                                fontWeight: 600,
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                background: s.paymentStatus === 'Paid' ? '#10b98120' : s.paymentStatus === 'Partial' ? '#f59e0b20' : '#ef444420',
+                                                color: s.paymentStatus === 'Paid' ? '#10b981' : s.paymentStatus === 'Partial' ? '#f59e0b' : '#ef4444'
+                                            }}
+                                        >
+                                            <option value="Pending">Pending</option>
+                                            <option value="Partial">Partial</option>
+                                            <option value="Paid">Paid</option>
+                                        </select>
                                     </td>
                                     <td>
                                         <div style={{ display: 'flex', gap: '20px' }}>
@@ -265,10 +302,10 @@ const Sales = () => {
                             ))}
                         </tbody>
                     </table>
-                    {sales.length === 0 && (
+                    {filteredSales.length === 0 && (
                         <div style={{ padding: '60px', textAlign: 'center' }}>
                             <FileText size={48} color="var(--text-light)" style={{ marginBottom: '16px' }} />
-                            <p style={{ color: 'var(--text-muted)' }}>No sales records found.</p>
+                            <p style={{ color: 'var(--text-muted)' }}>{searchTerm ? 'No results found for search.' : 'No sales records found.'}</p>
                         </div>
                     )}
                 </div>

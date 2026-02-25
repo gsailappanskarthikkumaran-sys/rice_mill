@@ -11,18 +11,60 @@ const Settings = () => {
         mode: 'light'
     });
 
-    // Branch State
-    const [branches, setBranches] = useState([]);
-    const [isAddingBranch, setIsAddingBranch] = useState(false);
-    const [isEditingBranch, setIsEditingBranch] = useState(false);
-    const [selectedBranchId, setSelectedBranchId] = useState(null);
-    const [branchData, setBranchData] = useState({ name: '', location: '', contact: '' });
+    // Tenant State
+    const [tenant, setTenant] = useState({
+        millName: '',
+        ownerName: '',
+        address: '',
+        contactNumber: '',
+        gstNumber: '',
+        email: '',
+        website: ''
+    });
+    const [loadingTenant, setLoadingTenant] = useState(true);
 
     useEffect(() => {
         const savedTheme = localStorage.getItem('app-theme');
         if (savedTheme) setTheme(JSON.parse(savedTheme));
         fetchBranches();
+        fetchTenantData();
     }, []);
+
+    const fetchTenantData = async () => {
+        try {
+            setLoadingTenant(true);
+            const res = await api.get('/auth/me');
+            if (res.data?.tenantId) {
+                // The /auth/me route in my previous implementation returned tenantId as an object if populated
+                // Let's ensure we handle both cases or assume it's populated now
+                const tData = res.data.tenantId;
+                setTenant({
+                    millName: tData.millName || '',
+                    ownerName: tData.ownerName || '',
+                    address: tData.address || '',
+                    contactNumber: tData.contactNumber || '',
+                    gstNumber: tData.gstNumber || '',
+                    email: tData.email || '',
+                    website: tData.website || ''
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching tenant data:', error);
+        } finally {
+            setLoadingTenant(false);
+        }
+    };
+
+    const handleTenantUpdate = async (e) => {
+        e.preventDefault();
+        try {
+            await api.put('/tenants/me', tenant);
+            alert('Mill details updated successfully!');
+            fetchTenantData();
+        } catch (error) {
+            alert('Failed to update mill details');
+        }
+    };
 
     const fetchBranches = async () => {
         try {
@@ -188,8 +230,81 @@ const Settings = () => {
                     )}
                 </div>
 
-                {/* Aesthetic Settings */}
+                {/* Aesthetic Settings & Mill Branding */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                    {/* Mill Branding Section */}
+                    <div className="glass-card" style={{ padding: '32px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                            <Building2 className="text-primary" />
+                            <h2 style={{ fontSize: '1.25rem', margin: 0 }}>Mill Branding</h2>
+                        </div>
+                        <form onSubmit={handleTenantUpdate}>
+                            <div className="form-group">
+                                <label>Mill Name</label>
+                                <input
+                                    required
+                                    type="text"
+                                    className="form-control"
+                                    value={tenant.millName}
+                                    onChange={(e) => setTenant({ ...tenant, millName: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Proprietor Name</label>
+                                <input
+                                    required
+                                    type="text"
+                                    className="form-control"
+                                    value={tenant.ownerName}
+                                    onChange={(e) => setTenant({ ...tenant, ownerName: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>GSTIN / Registration No.</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. 22AAAAA0000A1Z5"
+                                    className="form-control"
+                                    value={tenant.gstNumber}
+                                    onChange={(e) => setTenant({ ...tenant, gstNumber: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Business Address</label>
+                                <textarea
+                                    className="form-control"
+                                    style={{ height: '80px', resize: 'none' }}
+                                    value={tenant.address}
+                                    onChange={(e) => setTenant({ ...tenant, address: e.target.value })}
+                                />
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                <div className="form-group">
+                                    <label>Contact Phone</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        className="form-control"
+                                        value={tenant.contactNumber}
+                                        onChange={(e) => setTenant({ ...tenant, contactNumber: e.target.value })}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Business Email</label>
+                                    <input
+                                        type="email"
+                                        className="form-control"
+                                        value={tenant.email}
+                                        onChange={(e) => setTenant({ ...tenant, email: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '12px' }}>
+                                <Save size={18} /> Update Mill Profile
+                            </button>
+                        </form>
+                    </div>
+
                     <div className="glass-card" style={{ padding: '32px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
                             <Palette className="text-primary" />

@@ -41,6 +41,22 @@ exports.updateTenant = async (req, res, next) => {
     }
 };
 
+// @desc    Update current tenant details
+// @route   PUT /api/tenants/me
+// @access  Private/MillOwner
+exports.updateMyTenant = async (req, res, next) => {
+    try {
+        const tenant = await Tenant.findByIdAndUpdate(req.tenantId, req.body, {
+            new: true,
+            runValidators: true
+        });
+        if (!tenant) return res.status(404).json({ error: 'Tenant info not found' });
+        res.status(200).json(tenant);
+    } catch (error) {
+        next(error);
+    }
+};
+
 // @desc    Toggle Tenant Status
 // @route   PATCH /api/tenants/:id/status
 // @access  Private/SuperAdmin

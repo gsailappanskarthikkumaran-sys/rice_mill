@@ -8,6 +8,16 @@ exports.createProduction = async (req, res, next) => {
     try {
         const { inputPaddy, outputRice, husk, wastage } = req.body;
 
+        // Check for sufficient Paddy Stock
+        const stock = await Stock.findOne({ tenantId: req.tenantId });
+        if (!stock || stock.paddyStock < inputPaddy) {
+            return res.status(400).json({
+                error: 'Insufficient Paddy stock',
+                currentStock: stock ? stock.paddyStock : 0,
+                required: inputPaddy
+            });
+        }
+
         req.body.tenantId = req.tenantId;
         const production = await Production.create(req.body);
 
@@ -20,8 +30,7 @@ exports.createProduction = async (req, res, next) => {
                     riceStock: outputRice,
                     huskStock: husk
                 }
-            },
-            { upsert: true }
+            }
         );
 
         res.status(201).json(production);

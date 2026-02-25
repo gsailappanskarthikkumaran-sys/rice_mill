@@ -13,6 +13,7 @@ import Farmers from './pages/Farmers';
 import Tenants from './pages/Tenants'; // For SuperAdmin
 import Suppliers from './pages/Suppliers';
 import Settings from './pages/Settings';
+import ProtectedRoute from './components/ProtectedRoute';
 
 import { applyTheme } from './utils/theme';
 
@@ -31,15 +32,60 @@ function App() {
                     <Route path="/login" element={<Login />} />
                     <Route element={<Layout />}>
                         <Route path="/" element={<Dashboard />} />
-                        <Route path="/purchase" element={<Purchase />} />
-                        <Route path="/production" element={<Production />} />
-                        <Route path="/sales" element={<Sales />} />
-                        <Route path="/stocks" element={<Stocks />} />
-                        <Route path="/farmers" element={<Farmers />} />
-                        <Route path="/suppliers" element={<Suppliers />} />
-                        <Route path="/users" element={<Users />} />
-                        <Route path="/tenants" element={<Tenants />} />
-                        <Route path="/settings" element={<Settings />} />
+
+                        <Route path="/purchase" element={
+                            <ProtectedRoute allowedRoles={['SuperAdmin', 'MillOwner', 'Accountant']}>
+                                <Purchase />
+                            </ProtectedRoute>
+                        } />
+
+                        <Route path="/production" element={
+                            <ProtectedRoute allowedRoles={['SuperAdmin', 'MillOwner', 'Operator']}>
+                                <Production />
+                            </ProtectedRoute>
+                        } />
+
+                        <Route path="/sales" element={
+                            <ProtectedRoute allowedRoles={['SuperAdmin', 'MillOwner', 'Accountant']}>
+                                <Sales />
+                            </ProtectedRoute>
+                        } />
+
+                        <Route path="/stocks" element={
+                            <ProtectedRoute allowedRoles={['SuperAdmin', 'MillOwner', 'Accountant', 'Operator']}>
+                                <Stocks />
+                            </ProtectedRoute>
+                        } />
+
+                        <Route path="/farmers" element={
+                            <ProtectedRoute allowedRoles={['SuperAdmin', 'MillOwner', 'Accountant']}>
+                                <Farmers />
+                            </ProtectedRoute>
+                        } />
+
+                        <Route path="/suppliers" element={
+                            <ProtectedRoute allowedRoles={['SuperAdmin', 'MillOwner', 'Accountant']}>
+                                <Suppliers />
+                            </ProtectedRoute>
+                        } />
+
+                        <Route path="/users" element={
+                            <ProtectedRoute allowedRoles={['SuperAdmin', 'MillOwner']}>
+                                <Users />
+                            </ProtectedRoute>
+                        } />
+
+                        <Route path="/tenants" element={
+                            <ProtectedRoute allowedRoles={['SuperAdmin']}>
+                                <Tenants />
+                            </ProtectedRoute>
+                        } />
+
+                        <Route path="/settings" element={
+                            <ProtectedRoute allowedRoles={['SuperAdmin', 'MillOwner']}>
+                                <Settings />
+                            </ProtectedRoute>
+                        } />
                     </Route>
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
